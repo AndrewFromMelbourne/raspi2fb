@@ -399,6 +399,8 @@ main(
 
     //---------------------------------------------------------------------
 
+    free(copyp);
+
     memset(fbp, 0, finfo.smem_len);
 
     munmap(fbp, finfo.smem_len);
