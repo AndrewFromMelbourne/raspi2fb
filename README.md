@@ -27,4 +27,14 @@ You will need to install libbsd-dev
 
 #install
 
-    to be completed ...
+    sudo make install
+    sudo cp ../raspi2fb.init.d /etc/init.d/raspi2fb
+    sudo update-rc.d raspi2fb defaults
+    sudo service raspi2fb start
+
+#uninstall
+
+    sudo service raspi2fb stop
+    sudo update-rc.d -f raspi2fb remove
+    sudo rm /usr/local/bin/raspi2fb
+    sudo rm /etc/init.d/raspi2fb
