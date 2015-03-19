@@ -54,6 +54,12 @@
 
 //-------------------------------------------------------------------------
 
+#ifndef ALIGN_TO_16
+#define ALIGN_TO_16(x)  ((x + 15) & ~15)
+#endif
+
+//-------------------------------------------------------------------------
+
 #define DEFAULT_DEVICE "/dev/fb1"
 #define DEFAULT_FPS 10
 
@@ -324,11 +330,12 @@ main(
     VC_RECT_T rect;
     vc_dispmanx_rect_set(&rect, 0, 0, vinfo.xres, vinfo.yres);
 
-    uint16_t pitch = vinfo.xres * vinfo.bits_per_pixel / 8;
-
     //---------------------------------------------------------------------
 
-    void *copyp = malloc(finfo.smem_len);
+    uint16_t bytesPerPixel = 2;
+    uint16_t copyPitch = ALIGN_TO_16(vinfo.xres) * bytesPerPixel;
+
+    void *copyp = malloc(copyPitch * vinfo.yres);
 
     if (copyp == NULL)
     {
@@ -366,7 +373,7 @@ main(
         vc_dispmanx_resource_read_data(resourceHandle,
                                        &rect,
                                        copyp,
-                                       pitch);
+                                       finfo.line_length);
 
         void *fbRow = fbp;
         void *copyRow = copyp;
@@ -374,13 +381,13 @@ main(
         int y;
         for (y = 0 ; y < vinfo.yres ; y++)
         {
-            if (memcmp(fbRow, copyRow, pitch) != 0)
+            if (memcmp(fbRow, copyRow, finfo.line_length) != 0)
             {
-                memcpy(fbRow, copyRow, pitch);
+                memcpy(fbRow, copyRow, finfo.line_length);
             }
 
-            fbRow += pitch;
-            copyRow += pitch;
+            fbRow += finfo.line_length;
+            copyRow += copyPitch;
         }
 
         //-----------------------------------------------------------------
