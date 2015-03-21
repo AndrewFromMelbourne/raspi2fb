@@ -335,14 +335,17 @@ main(
     uint16_t bytesPerPixel = 2;
     uint16_t copyPitch = ALIGN_TO_16(vinfo.xres) * bytesPerPixel;
 
-    void *copyp = malloc(copyPitch * vinfo.yres);
+    void *backCopyP = malloc(copyPitch * vinfo.yres);
+    void *frontCopyP = malloc(copyPitch * vinfo.yres);
 
-    if (copyp == NULL)
+    if ((backCopyP == NULL) || (frontCopyP == NULL))
     {
-        perrorLog(isDaemon, program, "cannot allocat offscreen buffer");
+        perrorLog(isDaemon, program, "cannot allocat offscreen buffers");
 
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
+
+    memset(backCopyP, 0, copyPitch * vinfo.yres);
 
     //---------------------------------------------------------------------
 
@@ -372,23 +375,29 @@ main(
         vc_dispmanx_snapshot(display, resourceHandle, 0);
         vc_dispmanx_resource_read_data(resourceHandle,
                                        &rect,
-                                       copyp,
+                                       frontCopyP,
                                        finfo.line_length);
 
         void *fbRow = fbp;
-        void *copyRow = copyp;
+        void *frontCopyRow = frontCopyP;
+        void *backCopyRow = backCopyP;
 
         int y;
         for (y = 0 ; y < vinfo.yres ; y++)
         {
-            if (memcmp(fbRow, copyRow, finfo.line_length) != 0)
+            if (memcmp(backCopyRow, frontCopyRow, finfo.line_length) != 0)
             {
-                memcpy(fbRow, copyRow, finfo.line_length);
+                memcpy(fbRow, frontCopyRow, finfo.line_length);
             }
 
             fbRow += finfo.line_length;
-            copyRow += copyPitch;
+            frontCopyRow += copyPitch;
+            backCopyRow += copyPitch;
         }
+
+        void *tmp = backCopyP;
+        backCopyP = frontCopyP;
+        frontCopyP = tmp;
 
         //-----------------------------------------------------------------
 
@@ -406,7 +415,8 @@ main(
 
     //---------------------------------------------------------------------
 
-    free(copyp);
+    free(frontCopyP);
+    free(backCopyP);
 
     memset(fbp, 0, finfo.smem_len);
 
