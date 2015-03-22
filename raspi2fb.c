@@ -54,12 +54,6 @@
 
 //-------------------------------------------------------------------------
 
-#ifndef ALIGN_TO_16
-#define ALIGN_TO_16(x)  ((x + 15) & ~15)
-#endif
-
-//-------------------------------------------------------------------------
-
 #define DEFAULT_DEVICE "/dev/fb1"
 #define DEFAULT_FPS 10
 
@@ -296,19 +290,43 @@ main(
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
 
-    if (vinfo.bits_per_pixel != 16)
+    //---------------------------------------------------------------------
+
+    if ((vinfo.xres * 2) != finfo.line_length)
     {
-        perrorLog(isDaemon, program, "framebuff is not 16 bits per pixel");
+        perrorLog(isDaemon,
+                  program,
+                  "assumption failed ... framebuffer lines are padded");
 
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
 
-    void *fbp = mmap(0,
-                     finfo.smem_len,
-                     PROT_READ | PROT_WRITE,
-                     MAP_SHARED,
-                     fbfd,
-                     0);
+    if ((vinfo.xres % 16) != 0)
+    {
+        perrorLog(isDaemon,
+                  program,
+                  "framebuffer width must be a multiple of 16");
+
+        exitAndRemovePidFile(EXIT_FAILURE, pfh);
+    }
+
+    if (vinfo.bits_per_pixel != 16)
+    {
+        perrorLog(isDaemon,
+                  program,
+                  "framebuffer is not 16 bits per pixel");
+
+        exitAndRemovePidFile(EXIT_FAILURE, pfh);
+    }
+
+    //---------------------------------------------------------------------
+
+    uint16_t *fbp = mmap(0,
+                         finfo.smem_len,
+                         PROT_READ | PROT_WRITE,
+                         MAP_SHARED,
+                         fbfd,
+                         0);
 
     if (fbp == MAP_FAILED)
     {
@@ -332,20 +350,17 @@ main(
 
     //---------------------------------------------------------------------
 
-    uint16_t bytesPerPixel = 2;
-    uint16_t copyPitch = ALIGN_TO_16(vinfo.xres) * bytesPerPixel;
-
-    void *backCopyP = malloc(copyPitch * vinfo.yres);
-    void *frontCopyP = malloc(copyPitch * vinfo.yres);
+    uint16_t *backCopyP = malloc(finfo.smem_len);
+    uint16_t *frontCopyP = malloc(finfo.smem_len);
 
     if ((backCopyP == NULL) || (frontCopyP == NULL))
     {
-        perrorLog(isDaemon, program, "cannot allocat offscreen buffers");
+        perrorLog(isDaemon, program, "cannot allocate offscreen buffers");
 
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
 
-    memset(backCopyP, 0, copyPitch * vinfo.yres);
+    memset(backCopyP, 0, finfo.line_length * vinfo.yres);
 
     //---------------------------------------------------------------------
 
@@ -378,24 +393,28 @@ main(
                                        frontCopyP,
                                        finfo.line_length);
 
-        void *fbRow = fbp;
-        void *frontCopyRow = frontCopyP;
-        void *backCopyRow = backCopyP;
+        uint16_t *fbIter = fbp;
+        uint16_t *frontCopyIter = frontCopyP;
+        uint16_t *backCopyIter = backCopyP;
 
         int y;
         for (y = 0 ; y < vinfo.yres ; y++)
         {
-            if (memcmp(backCopyRow, frontCopyRow, finfo.line_length) != 0)
+            int x;
+            for (x = 0 ; x < vinfo.xres ; x++)
             {
-                memcpy(fbRow, frontCopyRow, finfo.line_length);
-            }
+                if (*frontCopyIter != *backCopyIter)
+                {
+                    *fbIter = *frontCopyIter;
+                }
 
-            fbRow += finfo.line_length;
-            frontCopyRow += copyPitch;
-            backCopyRow += copyPitch;
+                ++frontCopyIter;
+                ++backCopyIter;
+                ++fbIter;
+            }
         }
 
-        void *tmp = backCopyP;
+        uint16_t *tmp = backCopyP;
         backCopyP = frontCopyP;
         frontCopyP = tmp;
 
