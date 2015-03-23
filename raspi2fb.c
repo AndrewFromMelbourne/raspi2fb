@@ -362,6 +362,8 @@ main(
 
     memset(backCopyP, 0, finfo.line_length * vinfo.yres);
 
+    uint32_t pixels = vinfo.xres * vinfo.yres;
+
     //---------------------------------------------------------------------
 
     messageLog(isDaemon,
@@ -397,21 +399,17 @@ main(
         uint16_t *frontCopyIter = frontCopyP;
         uint16_t *backCopyIter = backCopyP;
 
-        int y;
-        for (y = 0 ; y < vinfo.yres ; y++)
+        uint32_t pixel;
+        for (pixel = 0 ; pixel < pixels ; pixel++)
         {
-            int x;
-            for (x = 0 ; x < vinfo.xres ; x++)
+            if (*frontCopyIter != *backCopyIter)
             {
-                if (*frontCopyIter != *backCopyIter)
-                {
-                    *fbIter = *frontCopyIter;
-                }
-
-                ++frontCopyIter;
-                ++backCopyIter;
-                ++fbIter;
+                *fbIter = *frontCopyIter;
             }
+
+            ++frontCopyIter;
+            ++backCopyIter;
+            ++fbIter;
         }
 
         uint16_t *tmp = backCopyP;
