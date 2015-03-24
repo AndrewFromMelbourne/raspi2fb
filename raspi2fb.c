@@ -55,6 +55,7 @@
 //-------------------------------------------------------------------------
 
 #define DEFAULT_DEVICE "/dev/fb1"
+#define DEFAULT_DISPLAY_NUMBER 0
 #define DEFAULT_FPS 10
 
 //-------------------------------------------------------------------------
@@ -72,8 +73,10 @@ printUsage(
     fprintf(fp, "Usage: %s <options>\n", name);
     fprintf(fp, "\n");
     fprintf(fp, "    --daemon - start in the background as a daemon\n");
-    fprintf(fp, "    --device - framebuffer device");
+    fprintf(fp, "    --device <device> - framebuffer device");
     fprintf(fp, " (default %s)\n", DEFAULT_DEVICE);
+    fprintf(fp, "    --display <number> - Raspberry Pi display number");
+    fprintf(fp, " (default %d)\n", DEFAULT_DISPLAY_NUMBER);
     fprintf(fp, "    --fps <fps> - set desired frames per second");
     fprintf(fp, " (default %d frames per second)\n", DEFAULT_FPS);
     fprintf(fp, "    --pidfile <pidfile> - create and lock PID file");
@@ -110,17 +113,19 @@ main(
     int fps = DEFAULT_FPS;
     suseconds_t frameDuration =  1000000 / fps;
     bool isDaemon =  false;
+    uint32_t displayNumber = DEFAULT_DISPLAY_NUMBER;
     const char *pidfile = NULL;
     const char *device = DEFAULT_DEVICE;
 
     //---------------------------------------------------------------------
 
-    static const char *sopts = "df:hp:D:";
+    static const char *sopts = "df:hn:p:D:";
     static struct option lopts[] = 
     {
         { "daemon", no_argument, NULL, 'd' },
         { "fps", required_argument, NULL, 'f' },
         { "help", no_argument, NULL, 'h' },
+        { "display", required_argument, NULL, 'n' },
         { "pidfile", required_argument, NULL, 'p' },
         { "device", required_argument, NULL, 'D' },
         { NULL, no_argument, NULL, 0 }
@@ -156,6 +161,12 @@ main(
 
             printUsage(stdout, program);
             exit(EXIT_SUCCESS);
+
+            break;
+
+        case 'n':
+
+            displayNumber = atoi(optarg);
 
             break;
 
@@ -238,7 +249,8 @@ main(
 
     bcm_host_init();
 
-    DISPMANX_DISPLAY_HANDLE_T display = vc_dispmanx_display_open(0);
+    DISPMANX_DISPLAY_HANDLE_T display
+        = vc_dispmanx_display_open(displayNumber);
 
     if (display == 0)
     {
