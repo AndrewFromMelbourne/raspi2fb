@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(COMPILE_DEFINITIONS -Wall -g -O3)
 set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 include_directories(/opt/vc/include)
 include_directories(/opt/vc/include/interface/vcos/pthreads)
