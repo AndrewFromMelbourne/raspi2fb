@@ -10,7 +10,13 @@ Program to copy the Raspberry Pi display to a secondary framebuffer.
     --fps <fps> - set desired frames per second (default 10 frames per second)
     --pidfile <pidfile> - create and lock PID file (if being run as a daemon)
     --help - print usage and exit
-# libraries
+
+# build prerequisite
+## cmake
+You will need to install cmake
+
+    sudo apt-get install cmake
+## libraries
 You will need to install libbsd-dev
 
     sudo apt-get install libbsd-dev
