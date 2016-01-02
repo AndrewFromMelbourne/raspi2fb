@@ -32,11 +32,11 @@ You will need to install libbsd-dev
     sudo update-rc.d raspi2fb defaults
     sudo service raspi2fb start
 ## Raspian Jessie
-	sudo make install
-	sudo cp ../raspi2fb@.service /etc/systemd/system/
-	sudo systemctl daemon-reload
-	sudo systemctl enable raspi2fb@1.service
-	sudo systemctl start raspi2fb@1
+    sudo make install
+    sudo cp ../raspi2fb@.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable raspi2fb@1.service
+    sudo systemctl start raspi2fb@1
 #uninstall
 ## Raspian Wheezy
     sudo service raspi2fb stop
@@ -44,7 +44,7 @@ You will need to install libbsd-dev
     sudo rm /usr/local/bin/raspi2fb
     sudo rm /etc/init.d/raspi2fb
 ## Raspian Jessie
-	sudo systemctl stop raspi2fb@1
-	sudo systemctl disable raspi2fb@1.service
-	sudo rm /etc/systemd/system/raspi2fb@.service
-	sudo rm /usr/local/bin/raspi2fb
+    sudo systemctl stop raspi2fb@1
+    sudo systemctl disable raspi2fb@1.service
+    sudo rm /etc/systemd/system/raspi2fb@.service
+    sudo rm /usr/local/bin/raspi2fb
