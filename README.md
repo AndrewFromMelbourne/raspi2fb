@@ -11,7 +11,7 @@ Program to copy the Raspberry Pi display to a secondary framebuffer.
     --pidfile <pidfile> - create and lock PID file (if being run as a daemon)
     --help - print usage and exit
 
-# build prerequisite
+# build prerequisites
 ## cmake
 You will need to install cmake
 
