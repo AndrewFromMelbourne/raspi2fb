@@ -3,7 +3,7 @@ Description=Copy Raspberry Pi screen to a secondary framebuffer
 
 [Service]
 Type=forking
-PidFile=/var/run/raspi2fb%i.pid
+PIDFile=/var/run/raspi2fb%i.pid
 ExecStart=/usr/local/bin/raspi2fb --daemon --device /dev/fb%i --pidfile /var/run/raspi2fb%i.pid
 
 [Install]
