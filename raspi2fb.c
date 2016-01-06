@@ -347,6 +347,8 @@ main(
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
 
+    memset(fbp, 0, finfo.smem_len);
+
     //---------------------------------------------------------------------
 
     uint32_t image_ptr;
