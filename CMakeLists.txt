@@ -1,18 +1,19 @@
 cmake_minimum_required(VERSION 2.6)
+project(raspi2fb)
 
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
-include_directories(/opt/vc/include)
-include_directories(/opt/vc/include/interface/vcos/pthreads)
-include_directories(/opt/vc/include/interface/vmcs_host)
-include_directories(/opt/vc/include/interface/vmcs_host/linux)
+find_package(PkgConfig)
+pkg_check_modules(EGL egl)
+pkg_check_modules(LIBBSD libbsd)
 
-link_directories(/opt/vc/lib)
+include_directories(${EGL_INCLUDE_DIRS} ${LIBBSD_INCLUDE_DIRS})
+link_directories(${EGL_LIBRARY_DIRS} ${LIBBSD_LIBRARY_DIRS})
 
-add_executable(raspi2fb raspi2fb.c syslogUtilities.c)
+add_executable(${PROJECT_NAME} raspi2fb.c syslogUtilities.c)
 
-target_link_libraries(raspi2fb bcm_host bsd)
+target_link_libraries(${PROJECT_NAME} ${EGL_LIBRARIES} ${LIBBSD_LIBRARIES})
 
-set_property(TARGET raspi2fb PROPERTY SKIP_BUILD_RPATH TRUE)
-install (TARGETS raspi2fb RUNTIME DESTINATION bin)
+set_property(TARGET ${PROJECT_NAME} PROPERTY SKIP_BUILD_RPATH TRUE)
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
