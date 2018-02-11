@@ -82,6 +82,11 @@ printUsage(
     fprintf(fp, " (default %d)\n", DEFAULT_DISPLAY_NUMBER);
     fprintf(fp, "    --fps <fps> - set desired frames per second");
     fprintf(fp, " (default %d frames per second)\n", DEFAULT_FPS);
+    fprintf(fp, "    --copyrect - copy only a rectangle the same size as the dest framebuffer\n");
+    fprintf(fp, "    --rectx <x> - copy rectangle from source fb at <x> in copyrect mode\n");
+    fprintf(fp, " (default 0)\n");
+    fprintf(fp, "    --recty <y> - copy rectangle from source fb at <y> in copyrect mode\n");
+    fprintf(fp, " (default 0)\n");
     fprintf(fp, "    --pidfile <pidfile> - create and lock PID file");
     fprintf(fp, " (if being run as a daemon)\n");
     fprintf(fp, "    --help - print usage and exit\n");
@@ -115,7 +120,10 @@ main(
 
     int fps = DEFAULT_FPS;
     suseconds_t frameDuration =  1000000 / fps;
-    bool isDaemon =  false;
+    bool isDaemon = false;
+    bool copyRect = false;
+    uint16_t copyRectX = 0;
+    uint16_t copyRectY = 0;
     uint32_t displayNumber = DEFAULT_DISPLAY_NUMBER;
     const char *pidfile = NULL;
     const char *device = DEFAULT_DEVICE;
@@ -131,6 +139,9 @@ main(
         { "display", required_argument, NULL, 'n' },
         { "pidfile", required_argument, NULL, 'p' },
         { "device", required_argument, NULL, 'D' },
+        { "copyrect", no_argument, NULL, 'r' },
+        { "rectx", required_argument, NULL, 'x' },
+        { "recty", required_argument, NULL, 'y' },
         { NULL, no_argument, NULL, 0 }
     };
 
@@ -140,6 +151,18 @@ main(
     {
         switch (opt)
         {
+        case 'x':
+            copyRectX = atoi(optarg);
+            break;
+
+        case 'y':
+            copyRectY = atoi(optarg);
+            break;
+            
+        case 'r':
+            copyRect = true;
+            break;
+            
         case 'd':
 
             isDaemon = true;
@@ -334,6 +357,32 @@ main(
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
 
+
+    if (copyRectX >= (info.width - vinfo.xres))
+    {
+        char s[80];
+        snprintf(s, 80, "rectx must be between 0 and %d for the configured framebuffers", (info.width - vinfo.xres) - 1);
+        perrorLog(isDaemon,
+                  program,
+                  s
+            );
+
+        exitAndRemovePidFile(EXIT_FAILURE, pfh);
+    }
+    
+    if (copyRectY >= (info.height - vinfo.yres))
+    {
+        char s[80];
+        snprintf(s, 80, "recty must be between 0 and %d for the configured framebuffers", (info.height - vinfo.yres) - 1);
+        perrorLog(isDaemon,
+                  program,
+                  s
+            );
+
+        exitAndRemovePidFile(EXIT_FAILURE, pfh);
+    }
+    
+
     //---------------------------------------------------------------------
 
     uint16_t *fbp = mmap(0,
@@ -356,20 +405,33 @@ main(
 
     uint32_t image_ptr;
 
-    DISPMANX_RESOURCE_HANDLE_T resourceHandle = 
-        vc_dispmanx_resource_create(VC_IMAGE_RGB565,
-                                    vinfo.xres,
-                                    vinfo.yres,
-                                    &image_ptr);
-
+    DISPMANX_RESOURCE_HANDLE_T resourceHandle;
     VC_RECT_T rect;
-    vc_dispmanx_rect_set(&rect, 0, 0, vinfo.xres, vinfo.yres);
-
+    
+    if (copyRect) {
+        resourceHandle = vc_dispmanx_resource_create(VC_IMAGE_RGB565,
+                                                     info.width,
+                                                     info.height,
+                                                     &image_ptr);
+        vc_dispmanx_rect_set(&rect, 0, 0, info.width, info.height);
+    } else {
+        resourceHandle = vc_dispmanx_resource_create(VC_IMAGE_RGB565,
+                                                     vinfo.xres,
+                                                     vinfo.yres,
+                                                     &image_ptr);
+        vc_dispmanx_rect_set(&rect, 0, 0, vinfo.xres, vinfo.yres);
+    }
+        
     //---------------------------------------------------------------------
 
-    uint16_t *backCopyP = malloc(finfo.smem_len);
-    uint16_t *frontCopyP = malloc(finfo.smem_len);
+    uint32_t len = copyRect ? (info.width * info.height * 2) : finfo.smem_len;
+    
+    uint16_t *backCopyP = malloc(len);
+    uint16_t *frontCopyP = malloc(len);
 
+    uint32_t line_len = copyRect ? (info.width * 2) : finfo.line_length;
+    
+    
     if ((backCopyP == NULL) || (frontCopyP == NULL))
     {
         perrorLog(isDaemon, program, "cannot allocate offscreen buffers");
@@ -377,20 +439,31 @@ main(
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
 
-    memset(backCopyP, 0, finfo.line_length * vinfo.yres);
-
-    uint32_t pixels = vinfo.xres * vinfo.yres;
+    memset(backCopyP, 0, copyRect ? (line_len * info.height) : finfo.line_length * vinfo.yres);
 
     //---------------------------------------------------------------------
 
-    messageLog(isDaemon,
-               program,
-               LOG_INFO,
-               "copying from %dx%d to %dx%d",
-               info.width,
-               info.height,
-               vinfo.xres,
-               vinfo.yres);
+    if (copyRect) {
+        messageLog(isDaemon,
+                   program,
+                   LOG_INFO,
+                   "raspi2fb copyrect mode, copying window from source fb[%dx%d @ %d,%d] to dest fb[%dx%d]",
+                   info.width,
+                   info.height,
+                   copyRectX,
+                   copyRectY,
+                   vinfo.xres,
+                   vinfo.yres);
+    } else {
+        messageLog(isDaemon,
+                   program,
+                   LOG_INFO,
+                   "raspi2fb normal scaling mode, copying from source fb[%dx%d] to dest fb [%dx%d]",
+                   info.width,
+                   info.height,
+                   vinfo.xres,
+                   vinfo.yres);
+    }
 
     //---------------------------------------------------------------------
 
@@ -400,6 +473,9 @@ main(
 
     //---------------------------------------------------------------------
 
+    // pixels = count of destination framebuffer pixels
+    uint32_t pixels = vinfo.xres * vinfo.yres;
+    
     while (run)
     {
         gettimeofday(&start_time, NULL);
@@ -407,31 +483,47 @@ main(
         //-----------------------------------------------------------------
 
         vc_dispmanx_snapshot(display, resourceHandle, 0);
+
         vc_dispmanx_resource_read_data(resourceHandle,
                                        &rect,
                                        frontCopyP,
-                                       finfo.line_length);
+                                       line_len);
 
-        uint16_t *fbIter = fbp;
-        uint16_t *frontCopyIter = frontCopyP;
-        uint16_t *backCopyIter = backCopyP;
-
-        uint32_t pixel;
-        for (pixel = 0 ; pixel < pixels ; pixel++)
-        {
-            if (*frontCopyIter != *backCopyIter)
-            {
-                *fbIter = *frontCopyIter;
+        if (copyRect) {
+            // rectangle copying mode - eliminated double buffering, not sure why it is done in 'normal' mode
+            for (uint16_t pixel_y = 0; pixel_y < vinfo.yres; pixel_y++) {
+                uint16_t* rowIter = &frontCopyP[((pixel_y + copyRectY) * info.width) + copyRectX];
+                uint16_t* fbIter = &fbp[pixel_y * vinfo.xres];
+                
+                for (uint16_t pixel_x = 0; pixel_x < vinfo.xres; pixel_x++) {
+                    *fbIter = *rowIter;
+                    ++fbIter;
+                    ++rowIter;
+                }
             }
-
-            ++frontCopyIter;
-            ++backCopyIter;
-            ++fbIter;
+        } else {
+            // normal scaled copy mode
+            uint16_t *fbIter = fbp;
+            uint16_t *frontCopyIter = frontCopyP;
+            uint16_t *backCopyIter = backCopyP;
+            
+            uint32_t pixel;
+            for (pixel = 0 ; pixel < pixels ; pixel++)
+            {
+                if (*frontCopyIter != *backCopyIter)
+                {
+                    *fbIter = *frontCopyIter;
+                }
+                
+                ++frontCopyIter;
+                ++backCopyIter;
+                ++fbIter;
+            }
+            
+            uint16_t *tmp = backCopyP;
+            backCopyP = frontCopyP;
+            frontCopyP = tmp;
         }
-
-        uint16_t *tmp = backCopyP;
-        backCopyP = frontCopyP;
-        frontCopyP = tmp;
 
         //-----------------------------------------------------------------
 
