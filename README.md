@@ -25,7 +25,7 @@ You will need to install libbsd-dev
     cd build
     cmake ..
     make
-#install
+# install
 ## Raspian Wheezy
     sudo make install
     sudo cp ../raspi2fb.init.d /etc/init.d/raspi2fb
@@ -37,7 +37,7 @@ You will need to install libbsd-dev
     sudo systemctl daemon-reload
     sudo systemctl enable raspi2fb@1.service
     sudo systemctl start raspi2fb@1
-#uninstall
+# uninstall
 ## Raspian Wheezy
     sudo service raspi2fb stop
     sudo update-rc.d -f raspi2fb remove
