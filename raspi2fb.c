@@ -83,9 +83,9 @@ printUsage(
     fprintf(fp, "    --fps <fps> - set desired frames per second");
     fprintf(fp, " (default %d frames per second)\n", DEFAULT_FPS);
     fprintf(fp, "    --copyrect - copy only a rectangle the same size as the dest framebuffer\n");
-    fprintf(fp, "    --rectx <x> - copy rectangle from source fb at <x> in copyrect mode\n");
+    fprintf(fp, "    --rectx <x> - copy rectangle from source fb at <x> in copyrect mode");
     fprintf(fp, " (default 0)\n");
-    fprintf(fp, "    --recty <y> - copy rectangle from source fb at <y> in copyrect mode\n");
+    fprintf(fp, "    --recty <y> - copy rectangle from source fb at <y> in copyrect mode");
     fprintf(fp, " (default 0)\n");
     fprintf(fp, "    --pidfile <pidfile> - create and lock PID file");
     fprintf(fp, " (if being run as a daemon)\n");
@@ -364,8 +364,7 @@ main(
         snprintf(s, 80, "rectx must be between 0 and %d for the configured framebuffers", (info.width - vinfo.xres) - 1);
         perrorLog(isDaemon,
                   program,
-                  s
-            );
+                  s);
 
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
@@ -376,8 +375,7 @@ main(
         snprintf(s, 80, "recty must be between 0 and %d for the configured framebuffers", (info.height - vinfo.yres) - 1);
         perrorLog(isDaemon,
                   program,
-                  s
-            );
+                  s);
 
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
@@ -443,7 +441,8 @@ main(
 
     //---------------------------------------------------------------------
 
-    if (copyRect) {
+    if (copyRect)
+    {
         messageLog(isDaemon,
                    program,
                    LOG_INFO,
@@ -454,7 +453,9 @@ main(
                    copyRectY,
                    vinfo.xres,
                    vinfo.yres);
-    } else {
+    }
+    else
+    {
         messageLog(isDaemon,
                    program,
                    LOG_INFO,
@@ -489,19 +490,22 @@ main(
                                        frontCopyP,
                                        line_len);
 
-        if (copyRect) {
+        if (copyRect)
+        {
             // rectangle copying mode - eliminated double buffering, not sure why it is done in 'normal' mode
-            for (uint16_t pixel_y = 0; pixel_y < vinfo.yres; pixel_y++) {
-                uint16_t* rowIter = &frontCopyP[((pixel_y + copyRectY) * info.width) + copyRectX];
-                uint16_t* fbIter = &fbp[pixel_y * vinfo.xres];
+            for (uint16_t pixel_y = 0 ; pixel_y < vinfo.yres ; pixel_y++)
+            {
+                uint16_t* rowIter = frontCopyP + ((pixel_y + copyRectY) * info.width) + copyRectX;
+                uint16_t* fbIter = fbp + (pixel_y * vinfo.xres);
                 
-                for (uint16_t pixel_x = 0; pixel_x < vinfo.xres; pixel_x++) {
-                    *fbIter = *rowIter;
-                    ++fbIter;
-                    ++rowIter;
+                for (uint16_t pixel_x = 0 ; pixel_x < vinfo.xres ; pixel_x++)
+                {
+                    *(fbIter++) = *(rowIter++);
                 }
             }
-        } else {
+        }
+        else
+        {
             // normal scaled copy mode
             uint16_t *fbIter = fbp;
             uint16_t *frontCopyIter = frontCopyP;
