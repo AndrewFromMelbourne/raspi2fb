@@ -358,10 +358,10 @@ main(
     }
 
 
-    if (copyRectX >= (info.width - vinfo.xres))
+    if (copyRectX > (info.width - vinfo.xres))
     {
         char s[80];
-        snprintf(s, 80, "rectx must be between 0 and %d for the configured framebuffers", (info.width - vinfo.xres) - 1);
+        snprintf(s, 80, "rectx must be between 0 and %d for the configured framebuffers", info.width - vinfo.xres);
         perrorLog(isDaemon,
                   program,
                   s);
@@ -369,10 +369,10 @@ main(
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
     
-    if (copyRectY >= (info.height - vinfo.yres))
+    if (copyRectY > (info.height - vinfo.yres))
     {
         char s[80];
-        snprintf(s, 80, "recty must be between 0 and %d for the configured framebuffers", (info.height - vinfo.yres) - 1);
+        snprintf(s, 80, "recty must be between 0 and %d for the configured framebuffers", info.height - vinfo.yres);
         perrorLog(isDaemon,
                   program,
                   s);
