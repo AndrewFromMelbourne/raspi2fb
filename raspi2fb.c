@@ -158,11 +158,11 @@ main(
         case 'y':
             copyRectY = atoi(optarg);
             break;
-            
+
         case 'r':
             copyRect = true;
             break;
-            
+
         case 'd':
 
             isDaemon = true;
@@ -237,7 +237,7 @@ main(
                 exit(EXIT_FAILURE);
             }
         }
-        
+
         if (daemon(0, 0) == -1)
         {
             fprintf(stderr, "Cannot daemonize\n");
@@ -358,28 +358,27 @@ main(
     }
 
 
-    if (copyRectX >= (info.width - vinfo.xres))
+    if (copyRectX > (info.width - vinfo.xres))
     {
         char s[80];
-        snprintf(s, 80, "rectx must be between 0 and %d for the configured framebuffers", (info.width - vinfo.xres) - 1);
+        snprintf(s, 80, "rectx must be between 0 and %d for the configured framebuffers", info.width - vinfo.xres);
         perrorLog(isDaemon,
                   program,
                   s);
 
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
-    
-    if (copyRectY >= (info.height - vinfo.yres))
+
+    if (copyRectY > (info.height - vinfo.yres))
     {
         char s[80];
-        snprintf(s, 80, "recty must be between 0 and %d for the configured framebuffers", (info.height - vinfo.yres) - 1);
+        snprintf(s, 80, "recty must be between 0 and %d for the configured framebuffers", info.height - vinfo.yres);
         perrorLog(isDaemon,
                   program,
                   s);
 
         exitAndRemovePidFile(EXIT_FAILURE, pfh);
     }
-    
 
     //---------------------------------------------------------------------
 
@@ -405,7 +404,7 @@ main(
 
     DISPMANX_RESOURCE_HANDLE_T resourceHandle;
     VC_RECT_T rect;
-    
+
     if (copyRect) {
         resourceHandle = vc_dispmanx_resource_create(VC_IMAGE_RGB565,
                                                      info.width,
@@ -419,17 +418,16 @@ main(
                                                      &image_ptr);
         vc_dispmanx_rect_set(&rect, 0, 0, vinfo.xres, vinfo.yres);
     }
-        
+
     //---------------------------------------------------------------------
 
     uint32_t len = copyRect ? (info.width * info.height * 2) : finfo.smem_len;
-    
+
     uint16_t *backCopyP = malloc(len);
     uint16_t *frontCopyP = malloc(len);
 
     uint32_t line_len = copyRect ? (info.width * 2) : finfo.line_length;
-    
-    
+
     if ((backCopyP == NULL) || (frontCopyP == NULL))
     {
         perrorLog(isDaemon, program, "cannot allocate offscreen buffers");
@@ -476,7 +474,7 @@ main(
 
     // pixels = count of destination framebuffer pixels
     uint32_t pixels = vinfo.xres * vinfo.yres;
-    
+
     while (run)
     {
         gettimeofday(&start_time, NULL);
@@ -497,7 +495,7 @@ main(
             {
                 uint16_t* rowIter = frontCopyP + ((pixel_y + copyRectY) * info.width) + copyRectX;
                 uint16_t* fbIter = fbp + (pixel_y * vinfo.xres);
-                
+
                 for (uint16_t pixel_x = 0 ; pixel_x < vinfo.xres ; pixel_x++)
                 {
                     *(fbIter++) = *(rowIter++);
@@ -510,7 +508,7 @@ main(
             uint16_t *fbIter = fbp;
             uint16_t *frontCopyIter = frontCopyP;
             uint16_t *backCopyIter = backCopyP;
-            
+
             uint32_t pixel;
             for (pixel = 0 ; pixel < pixels ; pixel++)
             {
@@ -518,12 +516,12 @@ main(
                 {
                     *fbIter = *frontCopyIter;
                 }
-                
+
                 ++frontCopyIter;
                 ++backCopyIter;
                 ++fbIter;
             }
-            
+
             uint16_t *tmp = backCopyP;
             backCopyP = frontCopyP;
             frontCopyP = tmp;
@@ -576,4 +574,3 @@ main(
 
     return 0 ;
 }
-
