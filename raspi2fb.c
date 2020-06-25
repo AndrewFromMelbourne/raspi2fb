@@ -89,6 +89,7 @@ printUsage(
     fprintf(fp, " (default 0)\n");
     fprintf(fp, "    --pidfile <pidfile> - create and lock PID file");
     fprintf(fp, " (if being run as a daemon)\n");
+    fprintf(fp, "    --once - copy only one time, then exit\n");
     fprintf(fp, "    --help - print usage and exit\n");
     fprintf(fp, "\n");
 }
@@ -122,6 +123,7 @@ main(
     suseconds_t frameDuration =  1000000 / fps;
     bool isDaemon = false;
     bool copyRect = false;
+    bool once = false;
     uint16_t copyRectX = 0;
     uint16_t copyRectY = 0;
     uint32_t displayNumber = DEFAULT_DISPLAY_NUMBER;
@@ -142,6 +144,7 @@ main(
         { "copyrect", no_argument, NULL, 'r' },
         { "rectx", required_argument, NULL, 'x' },
         { "recty", required_argument, NULL, 'y' },
+        { "once", no_argument, NULL, 'o' },
         { NULL, no_argument, NULL, 0 }
     };
 
@@ -200,6 +203,11 @@ main(
 
             pidfile = optarg;
 
+            break;
+
+        case 'o':
+
+            once = true;
             break;
 
         case 'D':
@@ -528,6 +536,15 @@ main(
         }
 
         //-----------------------------------------------------------------
+
+        if (once)
+        {
+            messageLog(isDaemon,
+                       program,
+                       LOG_INFO,
+                       "ran once, exiting now");
+            break;
+        }
 
         gettimeofday(&end_time, NULL);
         timersub(&end_time, &start_time, &elapsed_time);
