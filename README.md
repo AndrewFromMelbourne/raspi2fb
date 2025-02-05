@@ -1,3 +1,5 @@
+# This repository will no longer be updated. The DispmanX API is no longer supported in recent version of the Raspberry Pi OS.
+
 # raspi2fb
 Program to copy the Raspberry Pi display to a secondary framebuffer.
 # usage
